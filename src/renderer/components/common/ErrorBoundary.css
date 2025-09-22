@@ -1,0 +1,224 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+  background-color: var(--color-background-secondary, #f8f9fa);
+  border-radius: 8px;
+  border: 1px solid var(--color-border-error, #dc3545);
+}
+
+.error-boundary-content {
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.error-boundary h2 {
+  color: var(--color-text-primary, #212529);
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.error-boundary p {
+  color: var(--color-text-secondary, #6c757d);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.error-details {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.error-details summary {
+  cursor: pointer;
+  color: var(--color-text-secondary, #6c757d);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.error-stack {
+  background-color: var(--color-background-tertiary, #f1f3f4);
+  border: 1px solid var(--color-border, #dee2e6);
+  border-radius: 4px;
+  padding: 1rem;
+  font-size: 0.75rem;
+  font-family: 'Courier New', monospace;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.error-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.error-button.primary {
+  background-color: var(--color-accent-primary, #007bff);
+  color: white;
+}
+
+.error-button.primary:hover {
+  background-color: var(--color-accent-primary-hover, #0056b3);
+}
+
+.error-button.secondary {
+  background-color: transparent;
+  color: var(--color-text-secondary, #6c757d);
+  border: 1px solid var(--color-border, #dee2e6);
+}
+
+.error-button.secondary:hover {
+  background-color: var(--color-background-secondary, #f8f9fa);
+}
+
+/* Error Display Styles */
+.error-display {
+  border-radius: 6px;
+  border: 1px solid var(--color-border-error, #dc3545);
+  background-color: var(--color-background-error, #f8d7da);
+}
+
+.error-display-inline {
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.error-display-card {
+  padding: 1.5rem;
+  margin: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-display-banner {
+  padding: 1rem 1.5rem;
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.error-display-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.error-display-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.error-display-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-display-title {
+  color: var(--color-text-error, #721c24);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.error-display-dismiss {
+  background: none;
+  border: none;
+  color: var(--color-text-error, #721c24);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.error-display-dismiss:hover {
+  background-color: rgba(114, 28, 36, 0.1);
+}
+
+.error-display-message {
+  color: var(--color-text-error, #721c24);
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.error-display-actions {
+  margin-top: 0.5rem;
+}
+
+/* Empty State Styles */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 2rem;
+}
+
+.empty-state-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-state-title {
+  color: var(--color-text-primary, #212529);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-state-description {
+  color: var(--color-text-secondary, #6c757d);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.empty-state-action {
+  background-color: var(--color-accent-primary, #007bff);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.empty-state-action:hover {
+  background-color: var(--color-accent-primary-hover, #0056b3);
+}

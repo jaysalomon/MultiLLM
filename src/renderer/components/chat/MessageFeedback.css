@@ -1,0 +1,12 @@
+.message-feedback {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.message-feedback button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2em;
+}

@@ -1,0 +1,104 @@
+{
+  "name": "multi-llm-chat",
+  "version": "1.0.0",
+  "description": "A desktop application for chatting with multiple LLMs simultaneously",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "webpack --mode production",
+    "dev": "node scripts/dev.js",
+    "dev:main": "tsc -p tsconfig.main.json --watch",
+    "dev:renderer": "webpack serve --mode development",
+    "start": "electron dist/main.js",
+    "pack": "electron-builder",
+    "dist": "npm run build && electron-builder",
+    "build:manual": "npm run build && node scripts/build-dist.js",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "electron",
+    "llm",
+    "chat",
+    "ai"
+  ],
+  "author": "Multi-LLM Chat",
+  "license": "MIT",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/cheerio": "^0.22.35",
+    "@types/jest-axe": "^3.5.9",
+    "@types/jsdom": "^21.1.7",
+    "@types/mime-types": "^3.0.1",
+    "@types/natural": "^5.1.5",
+    "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.13",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/sql.js": "^1.4.9",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/ui": "^3.2.4",
+    "concurrently": "^8.2.0",
+    "css-loader": "^6.8.0",
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "html-webpack-plugin": "^5.5.0",
+    "jest-axe": "^10.0.0",
+    "jsdom": "^27.0.0",
+    "style-loader": "^3.3.0",
+    "ts-loader": "^9.4.0",
+    "typescript": "^5.1.0",
+    "vitest": "^3.2.4",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0"
+  },
+  "dependencies": {
+    "@types/sqlite3": "^3.1.11",
+    "@types/uuid": "^10.0.0",
+    "@xenova/transformers": "^2.16.1",
+    "cheerio": "^1.1.2",
+    "natural": "^8.1.0",
+    "node-fetch": "^3.3.2",
+    "onnxruntime-common": "^1.22.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.9.1",
+    "sql.js": "^1.13.0",
+    "uuid": "^13.0.0"
+  },
+  "build": {
+    "appId": "com.multi-llm-chat.app",
+    "productName": "Multi-LLM Chat",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "identity": null
+    },
+    "win": {
+      "target": "dir",
+      "publisherName": "Multi-LLM Chat"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

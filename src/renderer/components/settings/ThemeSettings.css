@@ -1,0 +1,135 @@
+.theme-settings {
+  padding: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.settings-section-title {
+  font-size: var(--font-size-heading);
+  color: var(--color-text-primary);
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.settings-group {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.settings-group:last-child {
+  border-bottom: none;
+}
+
+.settings-label {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.settings-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-base);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 4px;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.settings-select:hover {
+  border-color: var(--color-border-secondary);
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.settings-description {
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+
+.settings-toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: var(--color-accent-primary);
+}
+
+.settings-toggle-group .settings-label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.settings-subtitle {
+  font-size: var(--font-size-large);
+  color: var(--color-text-primary);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.keyboard-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: 4px;
+}
+
+.shortcut-key {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: var(--font-size-small);
+  border: 1px solid var(--color-border-primary);
+  font-weight: 600;
+}
+
+.shortcut-description {
+  margin-left: auto;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .theme-settings {
+    padding: 1rem;
+  }
+
+  .shortcut-item {
+    flex-wrap: wrap;
+  }
+
+  .shortcut-description {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}

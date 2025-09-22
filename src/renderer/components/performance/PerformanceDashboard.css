@@ -1,0 +1,236 @@
+.performance-dashboard {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--color-background-primary, white);
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border, #dee2e6);
+}
+
+.dashboard-header h1 {
+  color: var(--color-text-primary, #212529);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.export-button {
+  background-color: var(--color-accent-secondary, #28a745);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-button:hover:not(:disabled) {
+  background-color: var(--color-accent-secondary-hover, #218838);
+  transform: translateY(-1px);
+}
+
+.export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.performance-section,
+.performance-table-section {
+  margin-bottom: 3rem;
+}
+
+.performance-section h2,
+.performance-table-section h2 {
+  color: var(--color-text-primary, #212529);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-accent-primary, #007bff);
+}
+
+.table-container {
+  background: var(--color-background-primary, white);
+  border: 1px solid var(--color-border, #dee2e6);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.performance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.performance-table th {
+  background-color: var(--color-background-secondary, #f8f9fa);
+  color: var(--color-text-primary, #212529);
+  font-weight: 600;
+  padding: 1rem 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid var(--color-border, #dee2e6);
+  white-space: nowrap;
+}
+
+.performance-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border-light, #e9ecef);
+  vertical-align: middle;
+}
+
+.performance-table tbody tr:hover {
+  background-color: var(--color-background-secondary, #f8f9fa);
+}
+
+.performance-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.model-name {
+  font-weight: 600;
+  color: var(--color-text-primary, #212529);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.success-rate,
+.quality-score {
+  text-align: center;
+}
+
+.rate-badge,
+.score-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 50px;
+}
+
+.rate-badge.good,
+.score-badge.excellent {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.rate-badge.ok,
+.score-badge.good {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.rate-badge.poor,
+.score-badge.ok {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.score-badge.poor {
+  background-color: #f5c6cb;
+  color: #721c24;
+}
+
+.last-used {
+  color: var(--color-text-secondary, #6c757d);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.no-data {
+  padding: 3rem;
+  text-align: center;
+  color: var(--color-text-secondary, #6c757d);
+}
+
+.no-data p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .performance-dashboard {
+    padding: 1.5rem;
+  }
+  
+  .performance-table {
+    font-size: 0.8rem;
+  }
+  
+  .performance-table th,
+  .performance-table td {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .performance-dashboard {
+    padding: 1rem;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-actions {
+    justify-content: center;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  .performance-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-dashboard {
+    padding: 0.75rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .export-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+  
+  .performance-section h2,
+  .performance-table-section h2 {
+    font-size: 1.25rem;
+  }
+}

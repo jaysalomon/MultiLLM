@@ -1,0 +1,172 @@
+.add-model-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.add-model-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-model-button--small {
+  padding: 8px 12px;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.add-model-button--medium {
+  padding: 12px 16px;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.add-model-button--large {
+  padding: 16px 20px;
+  font-size: 16px;
+  gap: 10px;
+}
+
+.add-model-button--primary {
+  background-color: #007bff;
+  color: white;
+  border: 2px solid #007bff;
+}
+
+.add-model-button--primary:hover:not(:disabled) {
+  background-color: #0056b3;
+  border-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.add-model-button--primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.add-model-button--secondary {
+  background-color: #6c757d;
+  color: white;
+  border: 2px solid #6c757d;
+}
+
+.add-model-button--secondary:hover:not(:disabled) {
+  background-color: #545b62;
+  border-color: #545b62;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+}
+
+.add-model-button--outline {
+  background-color: transparent;
+  color: #007bff;
+  border: 2px solid #007bff;
+}
+
+.add-model-button--outline:hover:not(:disabled) {
+  background-color: #007bff;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.add-model-button__icon {
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.add-model-button--small .add-model-button__icon {
+  font-size: 16px;
+}
+
+.add-model-button--large .add-model-button__icon {
+  font-size: 20px;
+}
+
+.add-model-button__text {
+  font-weight: inherit;
+}
+
+/* Focus styles for accessibility */
+.add-model-button:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+.add-model-button--secondary:focus {
+  outline-color: #6c757d;
+}
+
+/* Loading state */
+.add-model-button--loading {
+  position: relative;
+  color: transparent;
+}
+
+.add-model-button--loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .add-model-button--primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  
+  .add-model-button--primary:hover:not(:disabled) {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.4);
+  }
+  
+  .add-model-button--secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+  }
+  
+  .add-model-button--secondary:hover:not(:disabled) {
+    background-color: #5c636a;
+    border-color: #5c636a;
+  }
+  
+  .add-model-button--outline {
+    color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  
+  .add-model-button--outline:hover:not(:disabled) {
+    background-color: #0d6efd;
+  }
+}

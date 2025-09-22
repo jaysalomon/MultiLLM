@@ -1,0 +1,171 @@
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  min-height: 60px;
+}
+
+.active-models {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.models-label {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.no-models {
+  font-size: 14px;
+  color: #adb5bd;
+  font-style: italic;
+}
+
+.model-indicators {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.model-indicator {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.model-indicator:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.model-indicator.inactive {
+  opacity: 0.5;
+  filter: grayscale(50%);
+}
+
+.model-indicator.inactive::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.model-indicator img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.model-initials {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chat-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.message-count {
+  font-size: 13px;
+  color: #6c757d;
+  background-color: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chat-header {
+    padding: 10px 12px;
+    min-height: 56px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .active-models {
+    width: 100%;
+  }
+  
+  .chat-stats {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .models-label {
+    font-size: 13px;
+  }
+  
+  .model-indicator {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+  
+  .model-initials {
+    font-size: 10px;
+  }
+  
+  .message-count {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-header {
+    padding: 8px;
+    min-height: 52px;
+  }
+  
+  .active-models {
+    gap: 8px;
+  }
+  
+  .model-indicators {
+    gap: 6px;
+  }
+  
+  .model-indicator {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  
+  .models-label {
+    font-size: 12px;
+  }
+  
+  .no-models {
+    font-size: 12px;
+  }
+}
