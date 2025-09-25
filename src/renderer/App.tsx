@@ -627,6 +627,8 @@ const MultiLLMChatInterface = () => {
           }
         );
 
+        await orchestratorRef.current.initializeTools();
+
         // Update communication system
         communicationSystemRef.current.updateParticipants(participants);
 

@@ -1,9 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { LLMOrchestrator } from '../LLMOrchestrator';
+import { LLMOrchestrator, type ToolExecutionClient } from '../LLMOrchestrator';
 import type { ChatMessage, LLMRequest, LLMResponse, ModelParticipant } from '../../types';
 import { ProviderType, type ProviderConfig } from '../../types/providers';
 import type { ILLMProvider } from '../../providers/base/ILLMProvider';
 import { toolExecutor } from '../../tools/ToolExecutor';
+import { toolRegistry } from '../../tools/ToolRegistry';
 
 class MockProvider {
 	public id = 'mock-model';
@@ -76,6 +77,21 @@ class MockProvider {
 }
 
 describe('LLMOrchestrator tool calling', () => {
+	const toolClient: ToolExecutionClient = {
+		getRegisteredTools: async () => toolRegistry.getAll(),
+		executeToolCall: (toolCall) => toolExecutor.execute(toolCall),
+		executeToolBatch: async (toolCalls) => {
+			const results = await toolExecutor.executeBatch(toolCalls);
+			const aggregated: Record<string, string> = {};
+			for (const [id, value] of results.entries()) {
+				aggregated[id] = value;
+			}
+			return aggregated;
+		}
+	};
+
+	LLMOrchestrator.setToolClient(toolClient);
+
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
@@ -104,16 +120,16 @@ describe('LLMOrchestrator tool calling', () => {
 			addedAt: new Date()
 		};
 
-			const provider = new MockProvider() as unknown as ILLMProvider;
+					const provider = new MockProvider() as unknown as ILLMProvider;
 
-			const orchestrator = new LLMOrchestrator([
-				participant
-			], [provider], {
+					const orchestrator = new LLMOrchestrator([
+						participant
+					], [provider], {
 			requestTimeout: 5000,
 			toolCallMaxIterations: 3
 		});
 
-		orchestrator.setAvailableTools(['calculator']);
+				await orchestrator.initializeTools(['calculator']);
 
 		const toolSpy = vi
 			.spyOn(toolExecutor, 'execute')

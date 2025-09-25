@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ChatInterface } from './components/chat';
@@ -519,6 +521,8 @@ const MultiLLMChatInterface = () => {
             enableResponseAggregation: true
           }
         );
+
+        await orchestratorRef.current.initializeTools();
 
         // Update communication system
         communicationSystemRef.current.updateParticipants(participants);

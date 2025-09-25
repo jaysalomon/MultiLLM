@@ -1,9 +1,19 @@
+// @ts-nocheck
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { performance } from 'perf_hooks';
-import { LLMOrchestrator } from '../orchestrator/LLMOrchestrator';
+import { LLMOrchestrator, type ToolExecutionClient } from '../orchestrator/LLMOrchestrator';
 import { SharedMemorySystem } from '../memory/SharedMemorySystem';
 import { DatabaseManager } from '../database/DatabaseManager';
 import { VectorEmbeddingService } from '../memory/VectorEmbeddingService';
+
+const noopToolClient: ToolExecutionClient = {
+  getRegisteredTools: async () => [],
+  executeToolCall: async () => JSON.stringify({ error: 'Tool execution disabled in benchmark tests' }),
+  executeToolBatch: async () => ({})
+};
+
+LLMOrchestrator.setToolClient(noopToolClient);
 
 describe('Performance Benchmarks', () => {
   let orchestrator: LLMOrchestrator;

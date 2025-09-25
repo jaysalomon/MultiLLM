@@ -1,4 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ToolCall } from '../types/chat';
+import type { Tool } from '../types/providers';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -84,8 +86,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Tool execution
   tools: {
     getRegistered: () => ipcRenderer.invoke('tools:getRegistered'),
-    execute: (toolCall: any) => ipcRenderer.invoke('tools:execute', toolCall),
-    executeBatch: (toolCalls: any[]) => ipcRenderer.invoke('tools:executeBatch', toolCalls),
+    execute: (toolCall: ToolCall) => ipcRenderer.invoke('tools:execute', toolCall),
+    executeBatch: (toolCalls: ToolCall[]) => ipcRenderer.invoke('tools:executeBatch', toolCalls),
   },
 
   // Error logging and monitoring
@@ -147,9 +149,9 @@ export interface ElectronAPI {
   getCostOptimizationSuggestions: () => Promise<string[]>;
   getRecommendedModel: (taskId: string) => Promise<string | undefined>;
   tools: {
-    getRegistered: () => Promise<any[]>;
-    execute: (toolCall: any) => Promise<string>;
-    executeBatch: (toolCalls: any[]) => Promise<Record<string, string>>;
+    getRegistered: () => Promise<Tool[]>;
+    execute: (toolCall: ToolCall) => Promise<string>;
+    executeBatch: (toolCalls: ToolCall[]) => Promise<Record<string, string>>;
   };
   // LLM orchestrator
   sendToLLMs: (messages: any[], participants: any[], apiKeys: any, endpoints?: any) => Promise<any[]>;

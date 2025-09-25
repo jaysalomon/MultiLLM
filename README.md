@@ -8,43 +8,31 @@
 [![GitHub Pages](https://img.shields.io/badge/Website-Live-green)](https://your-username.github.io/multi-llm-chat/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Multi-LLM Chat is a powerful and intuitive desktop application that allows you to engage in real-time conversations with multiple Large Language Models (LLMs) at the same time. It supports a wide range of LLM providers, including API-based services like OpenAI and Anthropic, as well as local models through Ollama and LM Studio.
+Multi-LLM Chat is a powerful and intuitive desktop application that allows you to engage in real-time conversations with multiple Large Language Models (LLMs) at the same time.
+
+## Download
+
+[**Download the latest version from our releases page.**](https://github.com/your-username/multi-llm-chat/releases)
 
 ## Features
 
-- **Multi-Model Conversations:** Chat with several LLMs in a single, unified interface.
-- **Provider Flexibility:** Seamlessly switch between different LLM providers.
-- **Shared Context:** Models are aware of each other's responses, enabling collaborative problem-solving.
-- **Local & Secure:** All your conversations and API keys are stored securely on your local machine.
-- **Persistent Memory:** Conversations and context are saved across sessions.
-- **Extensible:** Easily add new providers and models.
+- **Multi-LLM Conversation:** Chat with several LLMs in a single, unified interface.
+- **Provider Support:**
+  - API-based providers (OpenAI, Anthropic, etc.)
+  - Local models through Ollama.
+  - Local models through LM Studio.
+- **Shared Memory System:** Allows LLMs to share context and learn from each other.
+- **LLM-to-LLM Communication:** Enables direct communication between LLMs.
+- **Conversation Management:** Save, load, delete, and export your conversations.
+- **Performance Dashboard:** View detailed performance metrics for each model.
+- **Cost and Budget Management:** Track costs and manage your budget effectively.
+- **Tool Usage:** Extend the capabilities of LLMs with custom tools.
+- **Theming:** Customize the look and feel of the application with themes.
+- **Cross-Platform:** Works on Windows, macOS, and Linux.
 
-## Installation
+## For Developers
 
-The easiest way to get started is to download the latest pre-built release for your operating system from our [releases page](https://github.com/your-username/multi-llm-chat/releases).
-
-For more detailed installation instructions, including how to build the application from source, please see our [Installation Guide](INSTALLATION.md).
-
-
-## Usage
-
-To start the application in development mode:
-
-```bash
-npm run dev
-```
-
-To build the application for your platform:
-
-```bash
-npm run dist
-```
-
-This will create a distributable package in the `release` directory.
-
-## Contributing
-
-Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started.
+If you want to contribute to the project or run it from source, please see our [Installation Guide](INSTALLATION.md) and [Contributing Guide](CONTRIBUTING.md).
 
 ## Community
 
