@@ -24,23 +24,36 @@ const getSystemTheme = (): 'light' | 'dark' => {
 };
 
 const getStoredTheme = (): Theme => {
-  const stored = localStorage.getItem('app-theme');
-  if (stored === 'light' || stored === 'dark' || stored === 'system') {
-    return stored;
+  try {
+    const stored = localStorage.getItem('app-theme');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+  } catch (error) {
+    console.warn('Failed to read theme from localStorage:', error);
   }
   return 'system';
 };
 
 const getStoredFontSize = (): FontSize => {
-  const stored = localStorage.getItem('app-font-size');
-  if (stored === 'small' || stored === 'medium' || stored === 'large' || stored === 'extra-large') {
-    return stored;
+  try {
+    const stored = localStorage.getItem('app-font-size');
+    if (stored === 'small' || stored === 'medium' || stored === 'large' || stored === 'extra-large') {
+      return stored;
+    }
+  } catch (error) {
+    console.warn('Failed to read font size from localStorage:', error);
   }
   return 'medium';
 };
 
 const getStoredHighContrast = (): boolean => {
-  return localStorage.getItem('app-high-contrast') === 'true';
+  try {
+    return localStorage.getItem('app-high-contrast') === 'true';
+  } catch (error) {
+    console.warn('Failed to read high contrast setting from localStorage:', error);
+    return false;
+  }
 };
 
 interface ThemeProviderProps {
@@ -98,17 +111,29 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('app-theme', newTheme);
+    try {
+      localStorage.setItem('app-theme', newTheme);
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error);
+    }
   };
 
   const setFontSize = (newSize: FontSize) => {
     setFontSizeState(newSize);
-    localStorage.setItem('app-font-size', newSize);
+    try {
+      localStorage.setItem('app-font-size', newSize);
+    } catch (error) {
+      console.warn('Failed to save font size to localStorage:', error);
+    }
   };
 
   const setHighContrast = (enabled: boolean) => {
     setHighContrastState(enabled);
-    localStorage.setItem('app-high-contrast', enabled.toString());
+    try {
+      localStorage.setItem('app-high-contrast', enabled.toString());
+    } catch (error) {
+      console.warn('Failed to save high contrast setting to localStorage:', error);
+    }
   };
 
   return (

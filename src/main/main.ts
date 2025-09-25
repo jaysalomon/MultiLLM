@@ -12,6 +12,8 @@ import { errorLoggingSystem } from '../utils/ErrorLoggingSystem';
 import { logger } from '../utils/Logger';
 import { errorReporter } from '../utils/ErrorReporter';
 import { performanceMonitor } from '../utils/PerformanceMonitor';
+import { initializeKnowledgeHandlers, KnowledgeHandlers } from './handlers/KnowledgeHandlers';
+import { ToolHandlers } from './handlers/ToolHandlers';
 
 class MultiLLMChatApp {
   private mainWindow: BrowserWindow | null = null;
@@ -22,6 +24,8 @@ class MultiLLMChatApp {
   private costService: CostService;
   private qualityFeedbackRepo!: QualityFeedbackRepository;
   private performanceRepo!: PerformanceRepository;
+  private knowledgeHandlers?: KnowledgeHandlers;
+  private toolHandlers?: ToolHandlers;
 
   constructor() {
     this.dbManager = new DatabaseManager();
@@ -96,6 +100,8 @@ class MultiLLMChatApp {
     app.whenReady().then(async () => {
       // Initialize database before creating windows
       await this.initializeDatabase();
+
+  await this.initializeKnowledgeAndTools();
 
       this.createMainWindow();
 
@@ -300,7 +306,13 @@ class MultiLLMChatApp {
       // Message management handlers
       ipcMain.handle('add-message', async (event, conversationId, message) => {
         try {
-          await this.dbManager.conversations.addMessage(message);
+          await this.dbManager.conversations.addMessage({
+            ...message,
+            metadata: {
+              ...(message?.metadata || {}),
+              conversationId
+            }
+          });
         } catch (error) {
           console.error('Failed to add message:', error);
           throw error;
@@ -341,6 +353,110 @@ class MultiLLMChatApp {
         }
       });
 
+      // LLM Orchestrator handlers
+      ipcMain.handle('send-to-llms', async (event, messages, participants, apiKeys, endpoints) => {
+        try {
+          logger.info('Sending messages to LLMs', {
+            messageCount: messages.length,
+            participantCount: participants.length
+          });
+
+          // Simple direct API calls for each participant for now
+          const responses = await Promise.all(
+            participants.map(async (participant: any) => {
+              try {
+                let response = null;
+
+                if (participant.type === 'ollama') {
+                  const ollamaBaseUrl = endpoints?.ollamaEndpoint || 'http://localhost:11434';
+                  const ollamaResponse = await fetch(`${ollamaBaseUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      model: participant.model,
+                      messages: messages.map((m: any) => ({
+                        role: m.sender === 'user' ? 'user' : 'assistant',
+                        content: m.content
+                      })),
+                      stream: false
+                    })
+                  });
+                  const data = await ollamaResponse.json();
+                  response = data.message?.content || data.response || 'No response';
+                } else if (participant.type === 'lmstudio') {
+                  const lmStudioBaseUrl = endpoints?.lmStudioEndpoint || 'http://localhost:1234';
+                  const lmStudioResponse = await fetch(`${lmStudioBaseUrl}/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      model: participant.model,
+                      messages: messages.map((m: any) => ({
+                        role: m.sender === 'user' ? 'user' : 'assistant',
+                        content: m.content
+                      }))
+                    })
+                  });
+                  const data = await lmStudioResponse.json();
+                  response = data.choices?.[0]?.message?.content || 'No response';
+                } else if (participant.type === 'cloud' && apiKeys[participant.model]) {
+                  // Handle cloud APIs (OpenAI, Claude, etc)
+                  response = `Cloud API response from ${participant.model}`;
+                }
+
+                return {
+                  modelId: participant.id,
+                  content: response || `No response from ${participant.model}`,
+                  metadata: {
+                    processingTime: Date.now(),
+                    provider: participant.type
+                  }
+                };
+              } catch (error) {
+                logger.error(`Failed to get response from ${participant.model}`, { error });
+                return {
+                  modelId: participant.id,
+                  content: `Error: Failed to get response from ${participant.model}`,
+                  metadata: {
+                    processingTime: Date.now(),
+                    provider: participant.type,
+                    error: error instanceof Error ? error.message : String(error)
+                  }
+                };
+              }
+            })
+          );
+
+          logger.info('Received responses from LLMs', {
+            responseCount: responses.length
+          });
+
+          return responses;
+        } catch (error) {
+          logger.error('Failed to send to LLMs', { error }, error as Error);
+          throw error;
+        }
+      });
+
+      ipcMain.handle('discover-models', async () => {
+        try {
+          logger.info('Discovering available models');
+
+          // Discover models from Ollama
+          const ollamaModels = await this.discoverOllamaModels();
+
+          // Discover models from LM Studio
+          const lmStudioModels = await this.discoverLMStudioModels();
+
+          return {
+            ollama: ollamaModels,
+            lmstudio: lmStudioModels
+          };
+        } catch (error) {
+          logger.error('Failed to discover models', { error }, error as Error);
+          throw error;
+        }
+      });
+
       app.on('activate', () => {
         // On macOS it's common to re-create a window in the app when the
         // dock icon is clicked and there are no other windows open.
@@ -356,6 +472,20 @@ class MultiLLMChatApp {
         app.quit();
       }
     });
+  }
+
+  private async initializeKnowledgeAndTools(): Promise<void> {
+    try {
+      const knowledgeHandlers = initializeKnowledgeHandlers(this.dbManager);
+      await knowledgeHandlers.initialize();
+      this.knowledgeHandlers = knowledgeHandlers;
+
+      const toolHandlers = new ToolHandlers(knowledgeHandlers.getKnowledgeBase());
+      toolHandlers.initialize();
+      this.toolHandlers = toolHandlers;
+    } catch (error) {
+      logger.error('Failed to initialize knowledge or tool handlers', { error });
+    }
   }
 
   private createMainWindow(): void {
@@ -396,7 +526,11 @@ class MultiLLMChatApp {
 
   private conversationToMarkdown(conversation: any): string {
     let markdown = `# ${conversation.title || 'Conversation'}\n\n`;
-    markdown += `**Date:** ${new Date(conversation.created_at).toLocaleString()}\n\n`;
+    const createdAt = conversation.createdAt || conversation.created_at;
+    if (createdAt) {
+      const createdDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+      markdown += `**Date:** ${createdDate.toLocaleString()}\n\n`;
+    }
 
     if (conversation.messages) {
       for (const message of conversation.messages) {
@@ -411,7 +545,11 @@ class MultiLLMChatApp {
 
   private conversationToText(conversation: any): string {
     let text = `${conversation.title || 'Conversation'}\n`;
-    text += `Date: ${new Date(conversation.created_at).toLocaleString()}\n\n`;
+    const createdAt = conversation.createdAt || conversation.created_at;
+    if (createdAt) {
+      const createdDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+      text += `Date: ${createdDate.toLocaleString()}\n\n`;
+    }
 
     if (conversation.messages) {
       for (const message of conversation.messages) {
@@ -439,6 +577,28 @@ class MultiLLMChatApp {
       dashboardWindow.loadURL('http://localhost:3002/performance');
     } else {
       dashboardWindow.loadFile(path.join(__dirname, 'index.html'), { hash: 'performance' });
+    }
+  }
+
+  private async discoverOllamaModels(): Promise<string[]> {
+    try {
+      const response = await fetch('http://localhost:11434/api/tags');
+      const data = await response.json();
+      return data.models?.map((m: any) => m.name) || [];
+    } catch (error) {
+      logger.warn('Failed to discover Ollama models', { error });
+      return [];
+    }
+  }
+
+  private async discoverLMStudioModels(): Promise<string[]> {
+    try {
+      const response = await fetch('http://localhost:1234/v1/models');
+      const data = await response.json();
+      return data.data?.map((m: any) => m.id) || [];
+    } catch (error) {
+      logger.warn('Failed to discover LM Studio models', { error });
+      return [];
     }
   }
 }

@@ -1,4 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ToolCall } from '../types/chat';
+import type { Tool } from '../types/providers';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -28,6 +30,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveMemory: (memory: any) => ipcRenderer.invoke('save-memory', memory),
   searchMemories: (query: string, limit?: number) => ipcRenderer.invoke('search-memories', query, limit),
 
+  // LLM orchestrator
+  sendToLLMs: (messages: any[], participants: any[], apiKeys: any, endpoints?: any) =>
+    ipcRenderer.invoke('send-to-llms', messages, participants, apiKeys, endpoints),
+  discoverModels: () => ipcRenderer.invoke('discover-models'),
+
+  // Knowledge Base Management
+  knowledge: {
+    addDocument: (filePath: string) => ipcRenderer.invoke('knowledge:addDocument', filePath),
+    addDocuments: (filePaths: string[]) => ipcRenderer.invoke('knowledge:addDocuments', filePaths),
+    getDocuments: () => ipcRenderer.invoke('knowledge:getDocuments'),
+    getDocument: (documentId: string) => ipcRenderer.invoke('knowledge:getDocument', documentId),
+    deleteDocument: (documentId: string) => ipcRenderer.invoke('knowledge:deleteDocument', documentId),
+    updateDocument: (documentId: string, filePath: string) => ipcRenderer.invoke('knowledge:updateDocument', documentId, filePath),
+    search: (query: string, options?: any) => ipcRenderer.invoke('knowledge:search', query, options),
+    searchWithContext: (query: string, conversationHistory?: any[]) => ipcRenderer.invoke('knowledge:searchWithContext', query, conversationHistory),
+    hybridSearch: (query: string, keywords: string[]) => ipcRenderer.invoke('knowledge:hybridSearch', query, keywords),
+    getStats: () => ipcRenderer.invoke('knowledge:getStats'),
+    export: (format?: 'json' | 'markdown') => ipcRenderer.invoke('knowledge:export', format),
+    selectFiles: () => ipcRenderer.invoke('knowledge:selectFiles'),
+    getContextForQuery: (query: string, maxTokens?: number) => ipcRenderer.invoke('knowledge:getContextForQuery', query, maxTokens),
+    refreshEmbeddings: () => ipcRenderer.invoke('knowledge:refreshEmbeddings'),
+    clearAll: () => ipcRenderer.invoke('knowledge:clearAll'),
+
+    // Event listeners
+    on: (channel: string, callback: Function) => {
+      const validChannels = [
+        'knowledge:document:adding',
+        'knowledge:document:added',
+        'knowledge:document:error',
+        'knowledge:query:start',
+        'knowledge:query:complete'
+      ];
+      if (validChannels.includes(channel)) {
+        ipcRenderer.on(channel, (event, ...args) => callback(...args));
+      }
+    },
+
+    off: (channel: string, callback: Function) => {
+      ipcRenderer.removeListener(channel, callback as any);
+    }
+  },
+
   // Performance tracking
   saveFeedback: (messageId: string, modelId: string, feedback: 'good' | 'bad') => ipcRenderer.invoke('save-feedback', messageId, modelId, feedback),
   getBudgetStatus: () => ipcRenderer.invoke('get-budget-status'),
@@ -38,6 +82,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createTask: (name: string, description: string) => ipcRenderer.invoke('create-task', name, description),
   getCostOptimizationSuggestions: () => ipcRenderer.invoke('get-cost-optimization-suggestions'),
   getRecommendedModel: (taskId: string) => ipcRenderer.invoke('get-recommended-model', taskId),
+
+  // Tool execution
+  tools: {
+    getRegistered: () => ipcRenderer.invoke('tools:getRegistered'),
+    execute: (toolCall: ToolCall) => ipcRenderer.invoke('tools:execute', toolCall),
+    executeBatch: (toolCalls: ToolCall[]) => ipcRenderer.invoke('tools:executeBatch', toolCalls),
+  },
 
   // Error logging and monitoring
   writeLog: (logEntry: any) => ipcRenderer.invoke('write-log', logEntry),
@@ -67,6 +118,26 @@ export interface ElectronAPI {
   // Memory management
   saveMemory: (memory: any) => Promise<void>;
   searchMemories: (query: string, limit?: number) => Promise<any[]>;
+  // Knowledge Base Management
+  knowledge: {
+    addDocument: (filePath: string) => Promise<any>;
+    addDocuments: (filePaths: string[]) => Promise<any[]>;
+    getDocuments: () => Promise<any>;
+    getDocument: (documentId: string) => Promise<any>;
+    deleteDocument: (documentId: string) => Promise<any>;
+    updateDocument: (documentId: string, filePath: string) => Promise<any>;
+    search: (query: string, options?: any) => Promise<any>;
+    searchWithContext: (query: string, conversationHistory?: any[]) => Promise<any>;
+    hybridSearch: (query: string, keywords: string[]) => Promise<any>;
+    getStats: () => Promise<any>;
+    export: (format?: 'json' | 'markdown') => Promise<any>;
+    selectFiles: () => Promise<any>;
+    getContextForQuery: (query: string, maxTokens?: number) => Promise<any>;
+    refreshEmbeddings: () => Promise<any>;
+    clearAll: () => Promise<any>;
+    on: (channel: string, callback: Function) => void;
+    off: (channel: string, callback: Function) => void;
+  };
   // Performance tracking
   saveFeedback: (messageId: string, modelId: string, feedback: 'good' | 'bad') => Promise<void>;
   getBudgetStatus: () => Promise<{ budget: number; spending: number; remaining: number }>;
@@ -77,6 +148,14 @@ export interface ElectronAPI {
   createTask: (name: string, description: string) => Promise<void>;
   getCostOptimizationSuggestions: () => Promise<string[]>;
   getRecommendedModel: (taskId: string) => Promise<string | undefined>;
+  tools: {
+    getRegistered: () => Promise<Tool[]>;
+    execute: (toolCall: ToolCall) => Promise<string>;
+    executeBatch: (toolCalls: ToolCall[]) => Promise<Record<string, string>>;
+  };
+  // LLM orchestrator
+  sendToLLMs: (messages: any[], participants: any[], apiKeys: any, endpoints?: any) => Promise<any[]>;
+  discoverModels: () => Promise<{ ollama: string[]; lmstudio: string[] }>;
   // Error logging and monitoring
   writeLog: (logEntry: any) => Promise<void>;
   storeErrorReport: (errorReport: any) => Promise<void>;

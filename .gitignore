@@ -48,3 +48,8 @@ coverage/
 # Electron specific
 *.tgz
 *.tar.gz
+
+# Project specific
+.claude/
+.kiro/
+nul

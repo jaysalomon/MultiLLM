@@ -365,8 +365,6 @@ export class Database {
         results.push(stmt.getAsObject());
       }
       stmt.free();
-
-      await this.save();
       return results;
     } catch (error: any) {
       throw new Error(`Database query failed: ${error.message}`);
@@ -397,6 +395,7 @@ export class Database {
       stmt.step();
       stmt.free();
 
+      // Persist changes for write operations
       await this.save();
     } catch (error: any) {
       throw new Error(`Database statement failed: ${error.message}`);
@@ -584,21 +583,37 @@ export class Database {
    * Requirements: 8.2
    */
   async saveMemoryFact(conversationId: string, fact: MemoryFact): Promise<void> {
+    // Store memory facts using current schema columns:
+    // (id, conversation_id, content, source, timestamp, relevance_score, tags, embedding, verified, message_references)
     const factData = {
       id: fact.id,
       conversation_id: conversationId,
       content: fact.content,
-      importance: fact.relevanceScore || 0.5,
-      created_at: fact.timestamp.getTime(),
+      source: fact.source || 'unknown',
+      timestamp: fact.timestamp instanceof Date ? fact.timestamp.toISOString() : new Date().toISOString(),
+      relevance_score: typeof fact.relevanceScore === 'number' ? fact.relevanceScore : 0.5,
+      tags: JSON.stringify(fact.tags || []),
       embedding: fact.embedding ? JSON.stringify(fact.embedding) : null,
-      metadata: JSON.stringify({})
+      verified: fact.verified ? 1 : 0,
+      message_references: JSON.stringify(fact.references || [])
     };
 
     await this.run(
       `INSERT OR REPLACE INTO memory_facts
-        (id, conversation_id, content, importance, created_at, embedding, metadata)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      Object.values(factData)
+        (id, conversation_id, content, source, timestamp, relevance_score, tags, embedding, verified, message_references)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        factData.id,
+        factData.conversation_id,
+        factData.content,
+        factData.source,
+        factData.timestamp,
+        factData.relevance_score,
+        factData.tags,
+        factData.embedding,
+        factData.verified,
+        factData.message_references
+      ]
     );
   }
 
@@ -610,7 +625,7 @@ export class Database {
     const facts = await this.all(
       `SELECT * FROM memory_facts
        WHERE conversation_id = ?
-       ORDER BY importance DESC
+       ORDER BY relevance_score DESC
        LIMIT ?`,
       [conversationId, limit]
     );
@@ -618,15 +633,15 @@ export class Database {
     return facts.map(f => ({
       id: f.id,
       content: f.content,
-      source: 'conversation',
-      timestamp: new Date(f.created_at),
-      relevanceScore: f.importance,
-      tags: [],
+      source: f.source || 'conversation',
+      timestamp: f.timestamp ? new Date(f.timestamp) : new Date(),
+  relevanceScore: typeof f.relevance_score === 'number' ? f.relevance_score : (f.relevanceScore || 0.5),
+  tags: f.tags ? JSON.parse(f.tags) : [],
       embedding: f.embedding ? JSON.parse(f.embedding) : undefined,
       extractedEntities: [],
       relationships: [],
-      verified: false,
-      references: []
+      verified: f.verified === 1,
+      references: f.message_references ? JSON.parse(f.message_references) : []
     }));
   }
 
@@ -638,18 +653,34 @@ export class Database {
     const summaryData = {
       id: summary.id,
       conversation_id: conversationId,
+      start_time: summary.timeRange?.start ? summary.timeRange.start.toISOString() : new Date().toISOString(),
+      end_time: summary.timeRange?.end ? summary.timeRange.end.toISOString() : new Date().toISOString(),
       summary: summary.summary,
-      key_points: JSON.stringify(summary.keyPoints),
-      created_at: summary.createdAt.getTime(),
-      message_range_start: 0,
-      message_range_end: summary.messageCount || 0
+      key_points: JSON.stringify(summary.keyPoints || []),
+      participants: JSON.stringify(summary.participants || []),
+      message_count: typeof summary.messageCount === 'number' ? summary.messageCount : 0,
+      embedding: summary.embedding ? JSON.stringify(summary.embedding) : null,
+      created_by: summary.createdBy || 'system',
+      created_at: summary.createdAt ? summary.createdAt.toISOString() : new Date().toISOString()
     };
 
     await this.run(
       `INSERT OR REPLACE INTO conversation_summaries
-        (id, conversation_id, summary, key_points, created_at, message_range_start, message_range_end)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      Object.values(summaryData)
+        (id, conversation_id, start_time, end_time, summary, key_points, participants, message_count, embedding, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        summaryData.id,
+        summaryData.conversation_id,
+        summaryData.start_time,
+        summaryData.end_time,
+        summaryData.summary,
+        summaryData.key_points,
+        summaryData.participants,
+        summaryData.message_count,
+        summaryData.embedding,
+        summaryData.created_by,
+        summaryData.created_at
+      ]
     );
   }
 
@@ -668,15 +699,15 @@ export class Database {
     return summaries.map(s => ({
       id: s.id,
       summary: s.summary,
-      keyPoints: JSON.parse(s.key_points),
-      createdAt: new Date(s.created_at),
+      keyPoints: s.key_points ? JSON.parse(s.key_points) : [],
+      createdAt: s.created_at ? new Date(s.created_at) : new Date(),
       timeRange: {
-        start: new Date(s.created_at),
-        end: new Date(s.created_at)
+        start: s.start_time ? new Date(s.start_time) : (s.created_at ? new Date(s.created_at) : new Date()),
+        end: s.end_time ? new Date(s.end_time) : (s.created_at ? new Date(s.created_at) : new Date())
       },
-      participants: [],
-      messageCount: s.message_range_end - s.message_range_start,
-      createdBy: 'system'
+      participants: s.participants ? JSON.parse(s.participants) : [],
+      messageCount: typeof s.message_count === 'number' ? s.message_count : (s.message_range_end && s.message_range_start ? (s.message_range_end - s.message_range_start) : 0),
+      createdBy: s.created_by || 'system'
     }));
   }
 

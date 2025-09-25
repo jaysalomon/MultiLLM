@@ -1,67 +1,43 @@
 # Multi-LLM Chat
 
-A desktop application for chatting with multiple Large Language Models simultaneously.
+![Logo](https://via.placeholder.com/150x150.png?text=Logo)
 
-## Development Setup
+**A desktop application for chatting with multiple LLMs simultaneously.**
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm
+[![Build Status](https://github.com/jaysalomon/MultiLLM/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/jaysalomon/MultiLLM/actions/workflows/build-and-test.yml)
+[![GitHub Pages](https://img.shields.io/badge/Website-Live-green)](https://jaysalomon.github.io/MultiLLM/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-### Installation
+Multi-LLM Chat is a powerful and intuitive desktop application that allows you to engage in real-time conversations with multiple Large Language Models (LLMs) at the same time.
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+## Download
 
-### Development
+[**Download the latest version from our releases page.**](https://github.com/jaysalomon/MultiLLM/releases)
 
-To start the application in development mode with hot reload:
+## Features
 
-```bash
-npm run dev
-```
+- **Multi-LLM Conversation:** Chat with several LLMs in a single, unified interface.
+- **Provider Support:**
+  - API-based providers (OpenAI, Anthropic, etc.)
+  - Local models through Ollama.
+  - Local models through LM Studio.
+- **Shared Memory System:** Allows LLMs to share context and learn from each other.
+- **LLM-to-LLM Communication:** Enables direct communication between LLMs.
+- **Conversation Management:** Save, load, delete, and export your conversations.
+- **Performance Dashboard:** View detailed performance metrics for each model.
+- **Cost and Budget Management:** Track costs and manage your budget effectively.
+- **Tool Usage:** Extend the capabilities of LLMs with custom tools.
+- **Theming:** Customize the look and feel of the application with themes.
+- **Cross-Platform:** Works on Windows, macOS, and Linux.
 
-This will:
-- Start the webpack dev server for the renderer process
-- Compile the main process with TypeScript watch mode
-- Launch the Electron application
+## For Developers
 
-### Building
+If you want to contribute to the project or run it from source, please see our [Installation Guide](INSTALLATION.md) and [Contributing Guide](CONTRIBUTING.md).
 
-To build the application for production:
+## Community
 
-```bash
-npm run build
-```
+We have a [Code of Conduct](CODE_OF_CONDUCT.md) that we expect all community members to adhere to. Please read it before participating.
 
-To create distributable packages:
+## License
 
-```bash
-npm run dist
-```
-
-## Project Structure
-
-```
-src/
-├── main/           # Electron main process
-│   ├── main.ts     # Main application entry point
-│   └── preload.ts  # Preload script for secure IPC
-└── renderer/       # React renderer process
-    ├── index.tsx   # React entry point
-    ├── App.tsx     # Main App component
-    ├── App.css     # App styles
-    └── types/      # TypeScript type definitions
-```
-
-## Features (Planned)
-
-- Multi-LLM conversation interface
-- Support for API-based providers (OpenAI, Anthropic, etc.)
-- Local model support (Ollama, LM Studio)
-- Shared memory system for persistent context
-- LLM-to-LLM communication
-- Conversation export and management
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

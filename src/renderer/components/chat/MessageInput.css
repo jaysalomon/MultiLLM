@@ -1,27 +1,22 @@
 .message-input-container {
-  background-color: white;
-  border-top: 1px solid #e9ecef;
-  padding: 16px;
-}
-
-.message-input-form {
-  max-width: 100%;
+  padding: 1rem 1.5rem;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-primary);
 }
 
 .input-wrapper {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 12px;
-  padding: 12px;
-  transition: border-color 0.2s ease;
+  align-items: center;
+  background-color: var(--bg-secondary);
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-wrapper:focus-within {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .message-textarea {
@@ -30,112 +25,37 @@
   outline: none;
   background: transparent;
   resize: none;
-  font-family: inherit;
-  font-size: 14px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
   line-height: 1.5;
-  color: #2c3e50;
-  min-height: 20px;
-  max-height: 120px;
-  overflow-y: auto;
+  color: var(--text-primary);
+  max-height: 200px;
+  padding: 0.5rem;
 }
 
 .message-textarea::placeholder {
-  color: #95a5a6;
-}
-
-.message-textarea:disabled {
-  color: #95a5a6;
-  cursor: not-allowed;
+  color: var(--text-placeholder);
 }
 
 .send-button {
-  background-color: #3498db;
-  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 0.5rem;
+  background-color: var(--accent-primary);
+  color: var(--accent-text);
   border: none;
-  border-radius: 8px;
-  width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
+  transition: background-color 0.2s ease;
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #2980b9;
-  transform: translateY(-1px);
-}
-
-.send-button:active:not(:disabled) {
-  transform: translateY(0);
+  background-color: var(--accent-primary-hover);
 }
 
 .send-button:disabled {
-  background-color: #bdc3c7;
+  background-color: var(--border-secondary);
   cursor: not-allowed;
-  transform: none;
-}
-
-.input-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #7f8c8d;
-}
-
-.character-count {
-  font-weight: 500;
-}
-
-.input-hint {
-  font-style: italic;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .message-input-container {
-    padding: 12px;
-  }
-  
-  .input-wrapper {
-    padding: 10px;
-    gap: 8px;
-  }
-  
-  .message-textarea {
-    font-size: 16px; /* Prevents zoom on iOS */
-  }
-  
-  .send-button {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .input-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .message-input-container {
-    padding: 8px;
-  }
-  
-  .input-wrapper {
-    padding: 8px;
-  }
-  
-  .input-footer {
-    font-size: 11px;
-  }
-  
-  .input-hint {
-    display: none; /* Hide hint on very small screens */
-  }
 }
