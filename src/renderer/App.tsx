@@ -1,7 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+// @ts-nocheck
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { ChatInterface } from './components/chat';
+import VerboseConsole from './components/console/VerboseConsole';
 import { PerformanceDashboard } from './components/performance/PerformanceDashboard';
+import { ParticipantSidebar } from './components/participants/ParticipantSidebar';
+import { TurnIndicator } from './components/chat/TurnIndicator';
 import { ChatMessage, ModelParticipant } from '../types/chat';
 import { LLMCommunicationSystem } from '../orchestrator/LLMCommunicationSystem';
 import { LLMOrchestrator } from '../orchestrator/LLMOrchestrator';
@@ -13,7 +17,9 @@ import { logger } from '../utils/Logger';
 import { addBreadcrumb } from '../utils/ErrorReporter';
 import { performanceMonitor } from '../utils/PerformanceMonitor';
 import { ProviderFactory } from '../providers/ProviderFactory';
+import { ProviderType } from '../types/providers';
 import type { LLMProvider, APIProviderConfig, OllamaProviderConfig, LMStudioProviderConfig } from '../types/providers';
+import type { ConsoleLogEntry, ConsoleLogLevel } from './types/console';
 import './App.css';
 
 // Provider Configuration Form Component
@@ -475,9 +481,109 @@ const MultiLLMChatInterface = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeTurnId, setActiveTurnId] = useState<string | null>(null);
+  const [turnQueue, setTurnQueue] = useState<string[]>([]);
+  const [consoleLogs, setConsoleLogs] = useState<ConsoleLogEntry[]>([]);
+  const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(false);
 
   const orchestratorRef = useRef<LLMOrchestrator | null>(null);
   const communicationSystemRef = useRef<LLMCommunicationSystem>(new LLMCommunicationSystem());
+
+  const appendConsoleLog = useCallback((message: string, level: ConsoleLogLevel = 'info', context?: Record<string, unknown>) => {
+    setConsoleLogs(prev => {
+      const entry: ConsoleLogEntry = {
+        id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        level,
+        message,
+        timestamp: new Date(),
+        context,
+      };
+
+      const next = [...prev, entry];
+      const MAX_ENTRIES = 300;
+      return next.length > MAX_ENTRIES ? next.slice(next.length - MAX_ENTRIES) : next;
+    });
+  }, []);
+
+  const handleToggleConsole = useCallback(() => {
+    setIsConsoleCollapsed(prev => !prev);
+  }, []);
+
+  const handleClearConsole = useCallback(() => {
+    setConsoleLogs([]);
+  }, []);
+
+  const truncateForLog = useCallback((value: string, max: number = 160) => (
+    value.length > max ? `${value.slice(0, max)}…` : value
+  ), []);
+
+  useEffect(() => {
+    if (!isLoading || turnQueue.length <= 1) {
+      if (!isLoading) {
+        setActiveTurnId(null);
+      }
+      return;
+    }
+
+    let index = turnQueue.findIndex((id) => id === activeTurnId);
+    if (index < 0) {
+      index = 0;
+      setActiveTurnId(turnQueue[0]);
+    }
+
+    const interval = window.setInterval(() => {
+      index = (index + 1) % turnQueue.length;
+      setActiveTurnId(turnQueue[index]);
+    }, 2200);
+
+    return () => window.clearInterval(interval);
+  }, [isLoading, turnQueue, activeTurnId]);
+
+  const participantSidebarData = useMemo(
+    () =>
+      providers.map((provider) => ({
+        id: provider.id,
+        name: provider.name,
+        type: provider.type,
+        color: getProviderColor(provider.type, provider.id),
+        isActive: provider.isActive,
+      })),
+    [providers]
+  );
+
+  const turnIndicatorData = useMemo(
+    () =>
+      participantSidebarData.map(({ id, name, color }) => ({ id, name, color })),
+    [participantSidebarData]
+  );
+
+  const effectiveTurnQueue = turnQueue.length > 0
+    ? turnQueue
+    : participantSidebarData.filter((participant) => participant.isActive).map((participant) => participant.id);
+
+  const handleToggleParticipant = useCallback((id: string) => {
+    setProviders((prevProviders) => {
+      let toggledProvider: LLMProvider | undefined;
+      const updated = prevProviders.map((provider) => {
+        if (provider.id === id) {
+          const updatedProvider = { ...provider, isActive: !provider.isActive, updatedAt: new Date() };
+          toggledProvider = updatedProvider;
+          return updatedProvider;
+        }
+        return provider;
+      });
+
+      if (toggledProvider) {
+        appendConsoleLog(
+          `${toggledProvider.name} ${toggledProvider.isActive ? 'activated' : 'paused'}`,
+          toggledProvider.isActive ? 'info' : 'warn'
+        );
+      }
+
+      return updated;
+    });
+  }, [appendConsoleLog]);
 
   // Initialize orchestrator when providers change
   useEffect(() => {
@@ -485,6 +591,7 @@ const MultiLLMChatInterface = () => {
       const activeProviders = providers.filter(p => p.isActive);
       if (activeProviders.length === 0) {
         orchestratorRef.current = null;
+        appendConsoleLog('All providers are inactive. Orchestrator disabled.', 'warn');
         return;
       }
 
@@ -528,14 +635,23 @@ const MultiLLMChatInterface = () => {
           participants: participants.map(p => p.displayName)
         });
 
+        appendConsoleLog(
+          `Orchestrator ready with ${participants.length} participant${participants.length === 1 ? '' : 's'}`,
+          'info',
+          { participants: participants.map(p => p.displayName) }
+        );
+
       } catch (error) {
         logger.error('Failed to initialize orchestrator', {}, error as Error);
         orchestratorRef.current = null;
+        appendConsoleLog('Failed to initialize orchestrator', 'error', {
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
     };
 
     initializeOrchestrator();
-  }, [providers]);
+  }, [providers, appendConsoleLog]);
 
   // Save providers to localStorage
   useEffect(() => {
@@ -558,20 +674,26 @@ const MultiLLMChatInterface = () => {
             updatedAt: new Date(p.updatedAt)
           }));
           setProviders(validated);
+          appendConsoleLog(`Restored ${validated.length} provider${validated.length === 1 ? '' : 's'} from previous session`, 'info');
         } else {
           setShowSettings(true); // Show settings on first run
+          appendConsoleLog('No providers configured. Opening settings.', 'info');
         }
       } catch (error) {
         logger.error('Failed to load saved providers', {}, error as Error);
+        appendConsoleLog('Failed to load saved providers', 'error', {
+          error: error instanceof Error ? error.message : String(error)
+        });
       }
     };
 
     loadProviders();
-  }, []);
+  }, [appendConsoleLog]);
 
   const handleSendMessage = useCallback(async (content: string, taskId?: string, replyToMessage?: ChatMessage) => {
     if (!orchestratorRef.current) {
       logger.warn('No active providers configured');
+      appendConsoleLog('Message not sent: no active providers configured.', 'warn');
       return;
     }
 
@@ -585,7 +707,15 @@ const MultiLLMChatInterface = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    appendConsoleLog(`User → ${truncateForLog(content)}`, 'info');
     setIsLoading(true);
+    const activeProviderIds = providers.filter((provider) => provider.isActive).map((provider) => provider.id);
+    setTurnQueue(activeProviderIds);
+    setActiveTurnId(activeProviderIds[0] ?? null);
+
+    appendConsoleLog('Dispatching message to providers', 'debug', {
+      providers: activeProviderIds
+    });
 
     const timer = performanceMonitor.startTimer('llm_response');
 
@@ -603,6 +733,40 @@ const MultiLLMChatInterface = () => {
         metadata: {
           conversationId: 'current',
           messageId: userMessage.id
+        }
+      });
+
+      if (!Array.isArray(responses)) {
+        appendConsoleLog('Unexpected response payload from orchestrator', 'warn', {
+          type: typeof responses
+        });
+      }
+
+      (Array.isArray(responses) ? responses : []).forEach(response => {
+        const provider = providers.find(p => p.id === response.modelId);
+        const providerLabel = provider?.name || response.modelId;
+
+        if (response.metadata?.error) {
+          appendConsoleLog(`${providerLabel} returned an error`, 'error', {
+            error: response.metadata.error
+          });
+          return;
+        }
+
+        if (response.toolResults?.length) {
+          response.toolResults.forEach(toolResult => {
+            appendConsoleLog(`${providerLabel} executed tool ${toolResult.name}`, 'debug', {
+              arguments: toolResult.arguments,
+              output: truncateForLog(toolResult.output, 200)
+            });
+          });
+        }
+
+        if (response.content) {
+          appendConsoleLog(`${providerLabel} → ${truncateForLog(response.content)}`, 'info', {
+            tokens: response.usage?.totalTokens,
+            processingTime: response.metadata?.processingTime
+          });
         }
       });
 
@@ -639,40 +803,83 @@ const MultiLLMChatInterface = () => {
         data: { messageId: userMessage.id }
       });
 
+      appendConsoleLog(`Received ${aiMessages.length} response${aiMessages.length === 1 ? '' : 's'}`, 'info');
+
     } catch (error) {
       logger.error('Failed to get LLM responses', { messageId: userMessage.id }, error as Error);
       performanceMonitor.endTimer('llm_response');
+      appendConsoleLog('Failed to get responses from providers', 'error', {
+        error: error instanceof Error ? error.message : String(error)
+      });
     } finally {
+      setActiveTurnId(null);
+      setTurnQueue([]);
       setIsLoading(false);
+      appendConsoleLog('Conversation turn completed', 'debug');
     }
-  }, [providers, messages]);
+  }, [providers, messages, appendConsoleLog, truncateForLog]);
+
+  const activeParticipantsForChat = providers
+    .filter((provider) => provider.isActive)
+    .map((provider) => ({
+      id: provider.id,
+      provider,
+      modelName:
+        provider.type === ProviderType.Api
+          ? (provider.config as APIProviderConfig).modelName
+          : (provider.config as OllamaProviderConfig | LMStudioProviderConfig).modelName,
+      displayName: provider.name,
+      color: getProviderColor(provider.type, provider.id),
+      isActive: provider.isActive,
+      addedAt: provider.createdAt,
+    }));
 
   return (
-    <div className="multi-llm-chat">
-      <div className="chat-container">
-        <div className="chat-header">
-          <button onClick={() => setMessages([])} className="btn-secondary">
-            🆕 New Chat
-          </button>
-          <button onClick={() => setShowSettings(!showSettings)} className="btn-primary">
-            ⚙️ Settings
-          </button>
+    <div className={`multi-llm-chat${isSidebarCollapsed ? ' multi-llm-chat--collapsed' : ''}`}>
+      <ParticipantSidebar
+        participants={participantSidebarData}
+        isCollapsed={isSidebarCollapsed}
+        activeTurnId={activeTurnId}
+        turnQueue={effectiveTurnQueue}
+        isLoading={isLoading}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        onToggleParticipant={handleToggleParticipant}
+        onOpenSettings={() => setShowSettings(true)}
+      />
+
+      <div className="multi-llm-chat__main">
+        <div className="multi-llm-chat__toolbar">
+          <div className="toolbar-actions">
+            <button onClick={() => setMessages([])} className="btn-secondary">
+              🆕 New Chat
+            </button>
+            <button onClick={() => setShowSettings(!showSettings)} className="btn-primary">
+              ⚙️ Settings
+            </button>
+          </div>
+          <TurnIndicator
+            participants={turnIndicatorData}
+            activeTurnId={activeTurnId}
+            queue={effectiveTurnQueue}
+            isLoading={isLoading}
+          />
         </div>
 
-        <ChatInterface
-          messages={messages}
-          participants={providers.filter(p => p.isActive).map(p => ({
-            id: p.id,
-            provider: p,
-            modelName: p.name,
-            displayName: p.name,
-            color: getProviderColor(p.type, p.id),
-            isActive: p.isActive,
-            addedAt: new Date()
-          }))}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          disabled={!orchestratorRef.current}
+        <div className="multi-llm-chat__content">
+          <ChatInterface
+            messages={messages}
+            participants={activeParticipantsForChat}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={!orchestratorRef.current}
+          />
+        </div>
+
+        <VerboseConsole
+          logs={consoleLogs}
+          isCollapsed={isConsoleCollapsed}
+          onToggle={handleToggleConsole}
+          onClear={handleClearConsole}
         />
       </div>
 

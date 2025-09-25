@@ -4,10 +4,10 @@
  */
 
 import { BaseProvider } from '../base/BaseProvider';
-import type { 
-  LLMRequest, 
-  LLMResponse, 
-  OllamaProviderConfig 
+import type {
+  LLMRequest,
+  LLMResponse,
+  OllamaProviderConfig
 } from '../../types';
 import type {
   ValidationResult,
@@ -45,15 +45,13 @@ interface OllamaListResponse {
   models: OllamaModel[];
 }
 
-interface OllamaGenerateRequest {
+interface OllamaChatRequest {
   model: string;
-  prompt: string;
-  system?: string;
-  template?: string;
-  context?: number[];
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
   stream?: boolean;
-  raw?: boolean;
-  format?: string;
   options?: {
     temperature?: number;
     top_p?: number;
@@ -68,12 +66,14 @@ interface OllamaGenerateRequest {
   keep_alive?: string;
 }
 
-interface OllamaGenerateResponse {
+interface OllamaChatResponse {
   model: string;
   created_at: string;
-  response: string;
+  message: {
+    role: string;
+    content: string;
+  };
   done: boolean;
-  context?: number[];
   total_duration?: number;
   load_duration?: number;
   prompt_eval_count?: number;
@@ -85,8 +85,31 @@ interface OllamaGenerateResponse {
 interface OllamaStreamChunk {
   model: string;
   created_at: string;
-  response: string;
+  message?: {
+    role: string;
+    content: string;
+  };
+  response?: string;
   done: boolean;
+}
+
+interface OllamaGenerateRequest {
+  model: string;
+  prompt: string;
+  system?: string;
+  stream?: boolean;
+  options?: {
+    temperature?: number;
+    top_p?: number;
+    top_k?: number;
+    num_ctx?: number;
+    num_gpu?: number;
+    num_thread?: number;
+    repeat_penalty?: number;
+    seed?: number;
+    stop?: string[];
+  };
+  keep_alive?: string;
 }
 
 /**
@@ -120,7 +143,7 @@ export class OllamaProvider extends BaseProvider {
    */
   async sendRequest(request: LLMRequest): Promise<LLMResponse> {
     const startTime = Date.now();
-    
+
     try {
       // Check rate limits
       const estimatedTokens = this.estimateTokenCount(
@@ -128,26 +151,37 @@ export class OllamaProvider extends BaseProvider {
       );
       await this.checkRateLimit(estimatedTokens);
 
-      // Convert messages to Ollama format
-      const { prompt, systemPrompt } = this.convertMessagesToPrompt(request.messages);
-      
-      const ollamaRequest: OllamaGenerateRequest = {
+      // Convert messages to Ollama chat format
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+
+      // Add system message if provided
+      if (request.systemPrompt) {
+        messages.push({ role: 'system', content: request.systemPrompt });
+      }
+
+      // Convert messages
+      request.messages.forEach(msg => {
+        messages.push({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
+      });
+
+      const ollamaRequest: OllamaChatRequest = {
         model: this.modelName,
-        prompt,
-        system: systemPrompt,
+        messages,
         stream: false,
         options: {
           temperature: request.temperature ?? this.getTemperature(),
           top_p: this.getTopP(),
           num_ctx: this.numCtx,
-          num_gpu: this.numGpu,
-          stop: ['Human:', 'User:', '\n\nHuman:', '\n\nUser:']
+          num_gpu: this.numGpu
         },
         keep_alive: this.keepAlive
       };
 
-      const response = await this.makeRequest<OllamaGenerateResponse>(
-        '/api/generate',
+      const response = await this.makeRequest<OllamaChatResponse>(
+        '/api/chat',
         'POST',
         ollamaRequest
       );
@@ -156,7 +190,7 @@ export class OllamaProvider extends BaseProvider {
 
       return {
         modelId: this.id,
-        content: response.response.trim(),
+        content: response.message?.content?.trim() || '',
         metadata: {
           processingTime,
           tokenCount: response.eval_count,

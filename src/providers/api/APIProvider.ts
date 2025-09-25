@@ -106,13 +106,14 @@ export class APIProvider extends BaseProvider {
       await this.makeStreamingHTTPRequest(
         apiRequest,
         onChunk,
-        (finalContent) => {
+        (result) => {
           const response: LLMResponse = {
             modelId: this.id,
-            content: finalContent,
+            content: result.content,
+            tool_calls: result.tool_calls,
             metadata: {
               processingTime: Date.now() - startTime,
-              finishReason: 'stop'
+              finishReason: result.tool_calls ? 'tool_calls' : 'stop'
             }
           };
           onComplete(response);
@@ -121,7 +122,7 @@ export class APIProvider extends BaseProvider {
       );
       
     } catch (error) {
-      onError(this.handleError(error));
+      onError(this.handleError(error as Error));
     }
   }
 
@@ -220,6 +221,13 @@ export class APIProvider extends BaseProvider {
         }
       })
     };
+
+    if (request.tools && request.tools.length > 0) {
+      Object.assign(payload, {
+        tools: request.tools,
+        tool_choice: request.tool_choice ?? 'auto'
+      });
+    }
 
     return {
       method: 'POST',
@@ -414,14 +422,17 @@ export class APIProvider extends BaseProvider {
     if (!choice) {
       throw new InvalidRequestError(this.id, 'No choices in API response');
     }
+
+    const hasToolCalls = choice.message?.tool_calls && choice.message.tool_calls.length > 0;
     
     return {
       modelId: this.id,
-      content: choice.message?.content || '',
+      content: hasToolCalls ? null : choice.message?.content || '',
+      tool_calls: hasToolCalls ? choice.message.tool_calls : undefined,
       metadata: {
         processingTime: Date.now() - startTime,
         tokenCount: response.data.usage?.total_tokens,
-        finishReason: choice.finish_reason
+        finishReason: hasToolCalls ? 'tool_calls' : choice.finish_reason
       },
       usage: {
         promptTokens: response.data.usage?.prompt_tokens,

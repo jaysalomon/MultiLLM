@@ -1,7 +1,9 @@
 /**
- * Core chat message interface
- * Requirements: 1.3, 3.1
+ * Core chat message and conversation related TypeScript types
  */
+import type { SharedMemoryContext } from './memory';
+import type { LLMProvider, LLMRequest } from './providers';
+
 export interface ChatMessage {
   id: string;
   content: string;
@@ -10,31 +12,23 @@ export interface ChatMessage {
   replyTo?: string; // For threading LLM-to-LLM conversations
   taskId?: string;
   metadata?: {
-    model: string;
-    provider: string;
+    model?: string;
+    provider?: string;
     processingTime?: number;
     tokenCount?: number;
     error?: string;
   };
 }
 
-/**
- * Conversation state interface
- * Requirements: 1.3, 3.1, 8.1
- */
-export interface ConversationState {
+export interface ToolCall {
   id: string;
-  participants: ModelParticipant[];
-  messages: ChatMessage[];
-  sharedMemory: SharedMemoryContext;
-  createdAt: Date;
-  updatedAt: Date;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
 }
 
-/**
- * Model participant in a conversation
- * Requirements: 1.3, 4.1
- */
 export interface ModelParticipant {
   id: string;
   provider: LLMProvider;
@@ -46,18 +40,31 @@ export interface ModelParticipant {
   addedAt: Date;
 }
 
-/**
- * Response from an LLM
- * Requirements: 1.3, 3.1
- */
+export interface ConversationState {
+  id: string;
+  participants: ModelParticipant[];
+  messages: ChatMessage[];
+  sharedMemory: SharedMemoryContext;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface LLMResponse {
   modelId: string;
-  content: string;
+  content: string | null;
+  tool_calls?: ToolCall[];
+  toolResults?: Array<{
+    id: string;
+    name: string;
+    arguments: Record<string, any> | null;
+    output: string;
+    error?: string;
+  }>;
   metadata: {
     processingTime: number;
     tokenCount?: number;
     error?: string;
-    finishReason?: 'stop' | 'length' | 'content_filter' | 'function_call';
+    finishReason?: 'stop' | 'length' | 'content_filter' | 'tool_calls';
   };
   usage?: {
     promptTokens?: number;
@@ -66,10 +73,6 @@ export interface LLMResponse {
   };
 }
 
-/**
- * Message thread for LLM-to-LLM conversations
- * Requirements: 3.1
- */
 export interface MessageThread {
   id: string;
   parentMessageId: string;
@@ -77,10 +80,6 @@ export interface MessageThread {
   messages: ChatMessage[];
   createdAt: Date;
 }
-
-// Import SharedMemoryContext from memory types
-import type { SharedMemoryContext } from './memory';
-import type { LLMProvider, LLMRequest } from './providers';
 
 // Re-export LLMRequest for convenience
 export type { LLMRequest };

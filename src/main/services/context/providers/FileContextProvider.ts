@@ -1,3 +1,5 @@
+import pdf from 'pdf-parse';
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as mime from 'mime-types';
@@ -14,6 +16,7 @@ export class FileContextProvider {
     '.sh', '.bash', '.zsh', '.fish',
     '.sql', '.graphql', '.proto',
     '.vue', '.svelte', '.astro',
+    '.pdf',
   ]);
 
   constructor() {
@@ -38,7 +41,16 @@ export class FileContextProvider {
         throw new Error(`Unsupported file type: ${ext}`);
       }
 
-      const content = await fs.readFile(filePath, 'utf-8');
+      let content: string;
+      const buffer = await fs.readFile(filePath);
+
+      if (ext === '.pdf') {
+        const data = await pdf(buffer);
+        content = data.text;
+      } else {
+        content = buffer.toString('utf-8');
+      }
+
       const processedContent = this.processFileContent(content, ext);
 
       const metadata: ContextMetadata = {
@@ -58,136 +70,54 @@ export class FileContextProvider {
   }
 
   private processFileContent(content: string, ext: string): string {
-    let processed = content;
-
-    // Add file type context
-    const language = this.detectLanguage(ext);
-    if (language) {
-      processed = `Language: ${language}\n\n${processed}`;
+    // Process content based on file type
+    if (['.json', '.yml', '.yaml'].includes(ext)) {
+      // Pretty-print structured data
+      try {
+        const parsed = JSON.parse(content);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return content;
+      }
     }
 
-    // For code files, try to extract important parts
-    if (this.isCodeFile(ext)) {
-      processed = this.extractImportantCode(processed, ext);
+    // For code files, remove excessive comments but keep important ones
+    if (['.ts', '.js', '.py', '.java'].includes(ext)) {
+      // Simple comment removal (preserves JSDoc/docstrings)
+      return content.replace(/\/\/[^\n]*$/gm, '').trim();
     }
 
-    return processed;
-  }
-
-  private extractImportantCode(content: string, ext: string): string {
-    const lines = content.split('\n');
-    const important: string[] = [];
-    const context: string[] = [];
-
-    // Patterns for important code elements
-    const importantPatterns = [
-      /^import\s+/,
-      /^from\s+\S+\s+import/,
-      /^export\s+/,
-      /^class\s+/,
-      /^interface\s+/,
-      /^type\s+/,
-      /^enum\s+/,
-      /^function\s+/,
-      /^const\s+/,
-      /^let\s+/,
-      /^var\s+/,
-      /^def\s+/,
-      /^async\s+/,
-      /@api/,
-      /@route/,
-      /@deprecated/,
-    ];
-
-    lines.forEach((line, index) => {
-      const trimmed = line.trim();
-      
-      // Check if line matches important patterns
-      const isImportant = importantPatterns.some(pattern => pattern.test(trimmed));
-      
-      if (isImportant) {
-        // Include some context lines
-        for (let i = Math.max(0, index - 1); i <= Math.min(lines.length - 1, index + 2); i++) {
-          if (!important.includes(lines[i])) {
-            important.push(lines[i]);
-          }
-        }
-      }
-      
-      // Always include comments that might be documentation
-      if (trimmed.startsWith('/**') || trimmed.startsWith('///') || trimmed.startsWith('#')) {
-        context.push(line);
-      }
-    });
-
-    // If we extracted important parts, combine them
-    if (important.length > 0) {
-      let result = 'Key Code Elements:\n';
-      result += important.join('\n');
-      
-      if (context.length > 0) {
-        result += '\n\nDocumentation/Comments:\n';
-        result += context.join('\n');
-      }
-      
-      // Add full content reference
-      result += '\n\n[Full content available but condensed for context]';
-      
-      return result;
-    }
-
-    // Return original if no extraction performed
     return content;
   }
 
   private detectLanguage(ext: string): string | null {
     const languageMap: Record<string, string> = {
-      '.ts': 'TypeScript',
-      '.tsx': 'TypeScript React',
-      '.js': 'JavaScript',
-      '.jsx': 'JavaScript React',
-      '.py': 'Python',
-      '.java': 'Java',
-      '.cpp': 'C++',
-      '.c': 'C',
-      '.h': 'C/C++ Header',
-      '.rs': 'Rust',
-      '.go': 'Go',
-      '.rb': 'Ruby',
-      '.php': 'PHP',
-      '.swift': 'Swift',
-      '.kt': 'Kotlin',
-      '.scala': 'Scala',
-      '.r': 'R',
-      '.m': 'MATLAB',
-      '.jl': 'Julia',
-      '.lua': 'Lua',
-      '.pl': 'Perl',
-      '.sh': 'Shell',
-      '.sql': 'SQL',
-      '.graphql': 'GraphQL',
-      '.proto': 'Protocol Buffers',
+      '.ts': 'typescript',
+      '.tsx': 'typescript',
+      '.js': 'javascript',
+      '.jsx': 'javascript',
+      '.py': 'python',
+      '.java': 'java',
+      '.cpp': 'cpp',
+      '.c': 'c',
+      '.rs': 'rust',
+      '.go': 'go',
+      '.rb': 'ruby',
+      '.php': 'php',
+      '.swift': 'swift',
+      '.kt': 'kotlin',
+      '.scala': 'scala',
+      '.r': 'r',
+      '.m': 'matlab',
+      '.sql': 'sql',
+      '.sh': 'bash',
     };
 
     return languageMap[ext] || null;
   }
 
-  private isCodeFile(ext: string): boolean {
-    const codeExtensions = [
-      '.ts', '.tsx', '.js', '.jsx',
-      '.py', '.java', '.cpp', '.c', '.h',
-      '.rs', '.go', '.rb', '.php',
-      '.swift', '.kt', '.scala',
-    ];
-    return codeExtensions.includes(ext);
-  }
-
   private async hashContent(content: string): Promise<string> {
     const crypto = await import('crypto');
-    return crypto
-      .createHash('sha256')
-      .update(content)
-      .digest('hex')
-      .slice(0, 16);
+    return crypto.createHash('sha256').update(content).digest('hex');
   }
 }

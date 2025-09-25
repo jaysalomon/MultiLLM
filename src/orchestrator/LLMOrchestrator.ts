@@ -3,28 +3,23 @@
  * Requirements: 1.1, 1.3, 2.1, 2.2, 2.3, 5.1, 5.2, 5.3
  */
 
-import type { 
-  LLMRequest, 
-  ProviderConfig 
-} from '../types/providers';
-import type { 
-  LLMResponse, 
-  ModelParticipant, 
-  ChatMessage 
-} from '../types/chat';
-import type { ILLMProvider } from '../providers/types';
-import { Database } from '../database/Database';
-import { APIProvider } from '../providers/api/APIProvider';
-import { OllamaProvider } from '../providers/ollama/OllamaProvider';
-import { LMStudioProvider } from '../providers/lmstudio/LMStudioProvider';
-import type { PerformanceMetric } from '../types/performance';
+import { LLMCommunicationSystem } from './LLMCommunicationSystem';
 import { PerformanceRepository } from '../database/PerformanceRepository';
-import { 
-  LLMCommunicationSystem, 
-  MessageRouting, 
-  LLMConversationThread, 
-  LLMDiscussionContext 
-} from './LLMCommunicationSystem';
+import { DatabaseManager } from '../database/DatabaseManager';
+import { OllamaProvider } from '../providers/ollama/OllamaProvider';
+import { APIProvider } from '../providers/api/APIProvider';
+import { LMStudioProvider } from '../providers/lmstudio/LMStudioProvider';
+import { toolExecutor } from '../tools/ToolExecutor';
+import { toolRegistry } from '../tools/ToolRegistry';
+import type { Tool, ToolCall, LLMRequest, LLMResponse, ModelParticipant } from '../types';
+import type { ILLMProvider } from '../providers/base/ILLMProvider';
+import type { Database } from 'better-sqlite3';
+import type { ProviderConfig } from '../types/providers';
+import type { ChatMessage } from '../types/chat';
+import type { PerformanceMetric } from '../types/performance';
+import type { MessageRouting, LLMConversationThread, LLMDiscussionContext } from './LLMCommunicationSystem';
+
+// Placeholder section removed - real implementation is below starting at line 214
 
 /**
  * Orchestrator response containing all model responses
@@ -65,6 +60,7 @@ export interface OrchestratorConfig {
   requestTimeout?: number;
   retryAttempts?: number;
   errorIsolation?: boolean;
+  toolCallMaxIterations?: number;
 }
 
 /**
@@ -77,18 +73,58 @@ export class LLMOrchestrator {
   private eventListeners: Array<(event: ModelLifecycleEvent) => void> = [];
   private config: OrchestratorConfig;
   private communicationSystem: LLMCommunicationSystem;
-  private performanceRepository: PerformanceRepository;
+  private performanceRepository: PerformanceRepository | null = null;
+  private availableTools: Tool[] = [];
+  private toolCallMaxIterations: number;
 
-  constructor(db: Database, config: OrchestratorConfig = {}) {
-    this.config = {
-      maxConcurrentRequests: 10,
-      requestTimeout: 30000,
-      retryAttempts: 3,
-      errorIsolation: true,
-      ...config
-    };
-    this.communicationSystem = new LLMCommunicationSystem();
-    this.performanceRepository = new PerformanceRepository(db);
+  constructor(
+    participantsOrDb: ModelParticipant[] | Database,
+    providersOrConfig?: ILLMProvider[] | OrchestratorConfig,
+    configParam?: OrchestratorConfig
+  ) {
+    // Handle both constructor signatures
+    if (Array.isArray(participantsOrDb)) {
+      // New signature: (participants, providers, config)
+      const participants = participantsOrDb as ModelParticipant[];
+      const providers = providersOrConfig as ILLMProvider[];
+      const config = configParam || {};
+
+      this.config = {
+        maxConcurrentRequests: 10,
+        requestTimeout: 30000,
+        retryAttempts: 3,
+        errorIsolation: true,
+        ...config
+      };
+
+      this.toolCallMaxIterations = this.config.toolCallMaxIterations ?? 2;
+      this.availableTools = toolRegistry.getAll();
+
+      // Initialize with provided participants and providers
+      participants.forEach(p => this.participants.set(p.id, p));
+      providers.forEach(p => this.providers.set(p.id, p));
+
+      this.communicationSystem = new LLMCommunicationSystem();
+      // No database in this mode, so no performance repository
+    } else {
+      // Original signature: (db, config)
+      const db = participantsOrDb as Database;
+      const config = (providersOrConfig as OrchestratorConfig) || {};
+
+      this.config = {
+        maxConcurrentRequests: 10,
+        requestTimeout: 30000,
+        retryAttempts: 3,
+        errorIsolation: true,
+        ...config
+      };
+
+      this.toolCallMaxIterations = this.config.toolCallMaxIterations ?? 2;
+      this.availableTools = toolRegistry.getAll();
+
+      this.communicationSystem = new LLMCommunicationSystem();
+      this.performanceRepository = new PerformanceRepository(db);
+    }
   }
 
   /**
@@ -252,6 +288,8 @@ export class LLMOrchestrator {
           ...(enhancedSystemPrompt ? [{ role: 'system' as const, content: enhancedSystemPrompt }] : []),
           ...requestMessages
         ],
+        tools: this.availableTools.length ? this.availableTools : undefined,
+        tool_choice: this.availableTools.length ? 'auto' : 'none',
         metadata: {
           conversationId,
           messageId,
@@ -272,26 +310,30 @@ export class LLMOrchestrator {
           throw new Error(`Provider not found for model ${participant.id}`);
         }
 
-        const response = await this.executeWithTimeout(
+        const response = await this.executeWithTimeout<LLMResponse>(
           () => provider.sendRequest(request),
           this.config.requestTimeout!
         );
 
-        responses.push(response);
+        const finalResponse = await this.processToolCalls(participant, request, response);
+
+        responses.push(finalResponse);
 
         // Save performance metrics
         const performanceMetric: PerformanceMetric = {
           id: `perf_${messageId}`,
           message_id: messageId,
           model_id: participant.id,
-          processing_time: response.metadata.processingTime,
-          token_count: response.metadata.tokenCount,
-          prompt_tokens: response.usage?.promptTokens,
-          completion_tokens: response.usage?.completionTokens,
-          error: response.metadata.error,
+          processing_time: finalResponse.metadata.processingTime,
+          token_count: finalResponse.metadata.tokenCount,
+          prompt_tokens: finalResponse.usage?.promptTokens,
+          completion_tokens: finalResponse.usage?.completionTokens,
+          error: finalResponse.metadata.error,
           created_at: new Date(),
         };
-        await this.performanceRepository.create(performanceMetric);
+        if (this.performanceRepository) {
+          await this.performanceRepository.create(performanceMetric);
+        }
       } catch (error) {
         const err = error instanceof Error ? error : new Error('Unknown error');
         errors.push({ modelId: participant.id, error: err });
@@ -398,7 +440,9 @@ export class LLMOrchestrator {
               error: response.metadata.error,
               created_at: new Date(),
             };
-            this.performanceRepository.create(performanceMetric);
+            if (this.performanceRepository) {
+              void this.performanceRepository.create(performanceMetric);
+            }
           },
           (error) => {
             onError(participant.id, error);
@@ -457,6 +501,38 @@ export class LLMOrchestrator {
     if (index > -1) {
       this.eventListeners.splice(index, 1);
     }
+  }
+
+  /**
+   * Configure which registered tools are available to participants
+   */
+  setAvailableTools(toolNames?: string[]): void {
+    if (!toolNames || toolNames.length === 0) {
+      this.availableTools = toolRegistry.getAll();
+      return;
+    }
+
+    const registryTools = toolRegistry.getAll();
+    const selectedTools = registryTools.filter(tool =>
+      toolNames.includes(tool.function.name)
+    );
+
+    this.availableTools = selectedTools;
+
+    const missingTools = toolNames.filter(
+      name => !selectedTools.some(tool => tool.function.name === name)
+    );
+
+    if (missingTools.length > 0) {
+      console.warn('[LLMOrchestrator] Requested tools are not registered:', missingTools);
+    }
+  }
+
+  /**
+   * Retrieve the currently enabled tool definitions
+   */
+  getAvailableTools(): Tool[] {
+    return [...this.availableTools];
   }
 
   /**
@@ -563,6 +639,112 @@ ${basePrompt ? `Additional context: ${basePrompt}` : ''}
   }
 
   /**
+   * Resolve tool calls by executing registered tools and looping until completion or limit
+   */
+  private async processToolCalls(
+    participant: ModelParticipant,
+    initialRequest: LLMRequest,
+    initialResponse: LLMResponse
+  ): Promise<LLMResponse> {
+    if (!initialResponse.tool_calls?.length || this.availableTools.length === 0) {
+      return initialResponse;
+    }
+
+    const provider = this.providers.get(participant.id);
+    if (!provider) {
+      return initialResponse;
+    }
+
+    const aggregatedMessages = initialRequest.messages.map(message => ({ ...message }));
+    const executionLog: NonNullable<LLMResponse['toolResults']> = [];
+
+    let iteration = 0;
+    let currentResponse: LLMResponse = initialResponse;
+
+    while (currentResponse.tool_calls?.length && iteration < this.toolCallMaxIterations) {
+      iteration += 1;
+
+      aggregatedMessages.push({
+        role: 'assistant',
+        content: currentResponse.content ?? '',
+        tool_calls: currentResponse.tool_calls
+      } as any);
+
+      for (const call of currentResponse.tool_calls) {
+        let parsedArgs: Record<string, any> | null = null;
+        try {
+          parsedArgs = call.function.arguments ? JSON.parse(call.function.arguments) : {};
+        } catch (error) {
+          parsedArgs = null;
+        }
+
+        let output = '';
+        let executionError: string | undefined;
+
+        try {
+          output = await toolExecutor.execute(call);
+        } catch (error) {
+          executionError = error instanceof Error ? error.message : 'Unknown error';
+          output = JSON.stringify({ error: executionError });
+        }
+
+        executionLog.push({
+          id: call.id || `${participant.id}_tool_${executionLog.length + 1}`,
+          name: call.function.name,
+          arguments: parsedArgs,
+          output,
+          error: executionError
+        });
+
+        aggregatedMessages.push({
+          role: 'tool',
+          content: output,
+          name: call.function.name,
+          tool_call_id: call.id
+        } as any);
+      }
+
+      const followUpRequest: LLMRequest = {
+        ...initialRequest,
+        messages: aggregatedMessages.map(message => ({ ...message })),
+        tools: this.availableTools,
+        tool_choice: 'auto'
+      };
+
+      currentResponse = await this.executeWithTimeout<LLMResponse>(
+        () => provider.sendRequest(followUpRequest),
+        this.config.requestTimeout!
+      );
+    }
+
+    if (executionLog.length) {
+      currentResponse = {
+        ...currentResponse,
+        toolResults: currentResponse.toolResults
+          ? [...currentResponse.toolResults, ...executionLog]
+          : executionLog
+      };
+    }
+
+    if (currentResponse.tool_calls?.length) {
+      currentResponse = {
+        ...currentResponse,
+        metadata: {
+          ...currentResponse.metadata,
+          error: [
+            currentResponse.metadata.error,
+            `Unresolved tool calls after ${this.toolCallMaxIterations} iterations`
+          ]
+            .filter(Boolean)
+            .join(' | ')
+        }
+      };
+    }
+
+    return currentResponse;
+  }
+
+  /**
    * Send message with LLM-to-LLM routing support
    * Requirements: 7.1, 7.2
    */
@@ -658,7 +840,9 @@ ${basePrompt ? `Additional context: ${basePrompt}` : ''}
       error: response.metadata.error,
       created_at: new Date(),
     };
-    await this.performanceRepository.create(performanceMetric);
+    if (this.performanceRepository) {
+      await this.performanceRepository.create(performanceMetric);
+    }
 
     // Add response to thread
     this.communicationSystem.addMessageToThread(threadId, responseMessage);

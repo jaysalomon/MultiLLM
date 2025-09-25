@@ -3,7 +3,11 @@
  * Requirements: 4.1
  */
 
-export type ProviderType = 'api' | 'ollama' | 'lmstudio';
+export enum ProviderType {
+  Api = 'api',
+  Ollama = 'ollama',
+  LMStudio = 'lmstudio',
+}
 
 /**
  * Base LLM Provider interface
@@ -99,16 +103,32 @@ export interface ProviderValidationResult {
 }
 
 /**
+ * Defines the structure of a tool that can be called by the LLM.
+ */
+export interface Tool {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, any>; // JSON Schema object
+  };
+}
+
+/**
  * Request to an LLM provider
  * Requirements: 3.1, 4.1
  */
 export interface LLMRequest {
   providerId: string;
   messages: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: 'system' | 'user' | 'assistant' | 'tool';
     content: string;
     name?: string; // for multi-agent identification
+    tool_call_id?: string;
+    tool_calls?: any[]; // Adjust as per actual ToolCall type
   }>;
+  tools?: Tool[];
+  tool_choice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;

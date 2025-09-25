@@ -1,11 +1,11 @@
-import { pipeline, Pipeline } from '@xenova/transformers';
+import { pipeline } from '@xenova/transformers';
 
 /**
  * Local vector embedding service using transformers.js
  * Requirements: 8.1, 8.2, 8.5
  */
 export class VectorEmbeddings {
-  private embeddingPipeline: Pipeline | null = null;
+  private embeddingPipeline: any = null;
   private isInitialized = false;
   private readonly modelName = 'Xenova/all-MiniLM-L6-v2'; // Lightweight embedding model
 
