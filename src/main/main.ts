@@ -306,7 +306,13 @@ class MultiLLMChatApp {
       // Message management handlers
       ipcMain.handle('add-message', async (event, conversationId, message) => {
         try {
-          await this.dbManager.conversations.addMessage(message);
+          await this.dbManager.conversations.addMessage({
+            ...message,
+            metadata: {
+              ...(message?.metadata || {}),
+              conversationId
+            }
+          });
         } catch (error) {
           console.error('Failed to add message:', error);
           throw error;
@@ -520,7 +526,11 @@ class MultiLLMChatApp {
 
   private conversationToMarkdown(conversation: any): string {
     let markdown = `# ${conversation.title || 'Conversation'}\n\n`;
-    markdown += `**Date:** ${new Date(conversation.created_at).toLocaleString()}\n\n`;
+    const createdAt = conversation.createdAt || conversation.created_at;
+    if (createdAt) {
+      const createdDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+      markdown += `**Date:** ${createdDate.toLocaleString()}\n\n`;
+    }
 
     if (conversation.messages) {
       for (const message of conversation.messages) {
@@ -535,7 +545,11 @@ class MultiLLMChatApp {
 
   private conversationToText(conversation: any): string {
     let text = `${conversation.title || 'Conversation'}\n`;
-    text += `Date: ${new Date(conversation.created_at).toLocaleString()}\n\n`;
+    const createdAt = conversation.createdAt || conversation.created_at;
+    if (createdAt) {
+      const createdDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+      text += `Date: ${createdDate.toLocaleString()}\n\n`;
+    }
 
     if (conversation.messages) {
       for (const message of conversation.messages) {

@@ -4,15 +4,15 @@
 
 **A desktop application for chatting with multiple LLMs simultaneously.**
 
-[![Build Status](https://github.com/your-username/multi-llm-chat/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/your-username/multi-llm-chat/actions/workflows/build-and-test.yml)
-[![GitHub Pages](https://img.shields.io/badge/Website-Live-green)](https://your-username.github.io/multi-llm-chat/)
+[![Build Status](https://github.com/jaysalomon/MultiLLM/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/jaysalomon/MultiLLM/actions/workflows/build-and-test.yml)
+[![GitHub Pages](https://img.shields.io/badge/Website-Live-green)](https://jaysalomon.github.io/MultiLLM/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Multi-LLM Chat is a powerful and intuitive desktop application that allows you to engage in real-time conversations with multiple Large Language Models (LLMs) at the same time.
 
 ## Download
 
-[**Download the latest version from our releases page.**](https://github.com/your-username/multi-llm-chat/releases)
+[**Download the latest version from our releases page.**](https://github.com/jaysalomon/MultiLLM/releases)
 
 ## Features
 
