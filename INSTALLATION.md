@@ -1,5 +1,7 @@
 # Multi-LLM Chat - Installation Guide
 
+**Note:** Multi-LLM Chat is a cross-platform application and runs on Windows, macOS, and Linux.
+
 ## System Requirements
 
 ### Minimum Requirements
@@ -15,7 +17,16 @@
 
 ## Installation Methods
 
-### Method 1: Pre-built Releases (Recommended)
+### Method 1: Pre-built Releases (Recommended for most users)
+
+This is the easiest way to install Multi-LLM Chat. We provide pre-built packages for Windows, macOS, and Linux.
+
+1.  Go to the [GitHub releases page](https://github.com/your-username/multi-llm-chat/releases).
+2.  Download the appropriate file for your operating system:
+    -   **Windows:** `Multi-LLM-Chat-Setup-x.y.z.exe`
+    -   **macOS:** `Multi-LLM-Chat-x.y.z.dmg`
+    -   **Linux:** `Multi-LLM-Chat-x.y.z.AppImage`
+3.  Follow the installation instructions for your operating system below.
 
 #### Windows
 1. Download the latest release from the GitHub releases page

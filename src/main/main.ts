@@ -12,6 +12,8 @@ import { errorLoggingSystem } from '../utils/ErrorLoggingSystem';
 import { logger } from '../utils/Logger';
 import { errorReporter } from '../utils/ErrorReporter';
 import { performanceMonitor } from '../utils/PerformanceMonitor';
+import { initializeKnowledgeHandlers, KnowledgeHandlers } from './handlers/KnowledgeHandlers';
+import { ToolHandlers } from './handlers/ToolHandlers';
 
 class MultiLLMChatApp {
   private mainWindow: BrowserWindow | null = null;
@@ -22,6 +24,8 @@ class MultiLLMChatApp {
   private costService: CostService;
   private qualityFeedbackRepo!: QualityFeedbackRepository;
   private performanceRepo!: PerformanceRepository;
+  private knowledgeHandlers?: KnowledgeHandlers;
+  private toolHandlers?: ToolHandlers;
 
   constructor() {
     this.dbManager = new DatabaseManager();
@@ -96,6 +100,8 @@ class MultiLLMChatApp {
     app.whenReady().then(async () => {
       // Initialize database before creating windows
       await this.initializeDatabase();
+
+  await this.initializeKnowledgeAndTools();
 
       this.createMainWindow();
 
@@ -460,6 +466,20 @@ class MultiLLMChatApp {
         app.quit();
       }
     });
+  }
+
+  private async initializeKnowledgeAndTools(): Promise<void> {
+    try {
+      const knowledgeHandlers = initializeKnowledgeHandlers(this.dbManager);
+      await knowledgeHandlers.initialize();
+      this.knowledgeHandlers = knowledgeHandlers;
+
+      const toolHandlers = new ToolHandlers(knowledgeHandlers.getKnowledgeBase());
+      toolHandlers.initialize();
+      this.toolHandlers = toolHandlers;
+    } catch (error) {
+      logger.error('Failed to initialize knowledge or tool handlers', { error });
+    }
   }
 
   private createMainWindow(): void {

@@ -16,6 +16,10 @@ export class KnowledgeHandlers {
     this.knowledgeBase = new KnowledgeBase(dbManager);
   }
 
+  getKnowledgeBase(): KnowledgeBase {
+    return this.knowledgeBase;
+  }
+
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 

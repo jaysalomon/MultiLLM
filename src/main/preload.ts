@@ -81,6 +81,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCostOptimizationSuggestions: () => ipcRenderer.invoke('get-cost-optimization-suggestions'),
   getRecommendedModel: (taskId: string) => ipcRenderer.invoke('get-recommended-model', taskId),
 
+  // Tool execution
+  tools: {
+    getRegistered: () => ipcRenderer.invoke('tools:getRegistered'),
+    execute: (toolCall: any) => ipcRenderer.invoke('tools:execute', toolCall),
+    executeBatch: (toolCalls: any[]) => ipcRenderer.invoke('tools:executeBatch', toolCalls),
+  },
+
   // Error logging and monitoring
   writeLog: (logEntry: any) => ipcRenderer.invoke('write-log', logEntry),
   storeErrorReport: (errorReport: any) => ipcRenderer.invoke('store-error-report', errorReport),
@@ -139,6 +146,11 @@ export interface ElectronAPI {
   createTask: (name: string, description: string) => Promise<void>;
   getCostOptimizationSuggestions: () => Promise<string[]>;
   getRecommendedModel: (taskId: string) => Promise<string | undefined>;
+  tools: {
+    getRegistered: () => Promise<any[]>;
+    execute: (toolCall: any) => Promise<string>;
+    executeBatch: (toolCalls: any[]) => Promise<Record<string, string>>;
+  };
   // LLM orchestrator
   sendToLLMs: (messages: any[], participants: any[], apiKeys: any, endpoints?: any) => Promise<any[]>;
   discoverModels: () => Promise<{ ollama: string[]; lmstudio: string[] }>;
